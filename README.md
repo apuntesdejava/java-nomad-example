@@ -1,60 +1,84 @@
 # java-nomad-example
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Este es un ejemplo de cómo ejecutar el proyecto con Nomad con Java:
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+* Descargando un compilado (que está en GitHub)
+* Ejecutando desde local (que está en la carpeta `target`)
 
-## Running the application in dev mode
+## Descargando un compilado
 
-You can run your application in dev mode that enables live coding using:
+Se puede ejecutar el comando nomad con el task `java`, pero tiene la restricción que solo puede ejecutar archivos que sean descargados, no desde local:
 
-```shell script
-./mvnw quarkus:dev
+```hcl
+task "api" {
+  driver = "java"
+#....
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Por ello, se hizo un "[GH Actions](.github/workflows/release.yml)" que publica el .jar compilado en [GitHub](https://github.com/apuntesdejava/java-nomad-example/releases).
 
-## Packaging and running the application
+Finalmente, el nomad para ser ejecutado es este: [from-github.nomad](from-github.nomad), y comando es:
 
-The application can be packaged using:
-
-```shell script
-./mvnw package
+```shell
+nomad run from-github.nomad
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+## Ejecutando desde local
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+Para ejecutar desde local, no se ejecuta el task `java` sino `raw_exec`. 
 
-If you want to build an _über-jar_, execute the following command:
+1. Compilar el proyecto como uber-jar:
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+Bash:
+```shell
+./mvnw clean package -Dquarkus.package.type=uber-jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
+Powershell:
+```powershell 
+.\mwnw clean package "-Dquarkus.package.jar.type=uber-jar"
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+
+
+2. Con eso ya se tiene el .jar compilado, ahora, ejecutamos el nomad, pero para ello necesitamos pasar la posición del jar.
+   Por ello, el archivo [`from-local.nomad`](from-local.nomad) tiene la definición de un parámetro de entrada
+
+```hcl
+variable "jar_path" {
+  type        = string
+  description = "Ruta absoluta al JAR en la máquina host"
+}
+
 ```
 
-You can then execute your native executable with: `./target/java-nomad-example-1.0-SNAPSHOT-runner`
+Y en la parte donde va el .jar, se indica esa variable:
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+```hcl
+    task "api" {
+      driver = "raw_exec"
+      config {
+        command = "java"
+        args = [
+          "-jar",
+          var.jar_path  # Aquí va la variable
+        ]
+      }
+    }
+```
 
-## Related Guides
+Finalmente, para ser ejecutado, se hace de la siguiente manera:
 
-- REST JSON-B ([guide](https://quarkus.io/guides/rest#json-serialisation)): JSON-B serialization support for Quarkus
-  REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on
-  it.
+Bash (Linux/macOS):
+
+```shell
+nomad job run -var="jar_path=$(pwd)/target/java-nomad-example-runner.jar" from-local.nomad
+```
+
+Powershell (Windows)
+```powershell
+nomad job run -var="jar_path=$(Get-Location)\target\java-nomad-example-runner.jar" .\from-local.nomad
+```
+
+La variable `$(pwd)` en bash y la variable `$(Get-Location)` en PowerShell dan la ruta absoluta desde donde se está ejecutando el comando. Por ello se está concatenando la parte de `target` y el jar generado, a fin de no colocar un hardcode de la ruta absoluta.
