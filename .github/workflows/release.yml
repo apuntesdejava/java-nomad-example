@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -20,7 +22,7 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn -B clean package -Dquarkus.profile=nomad
+        run: mvn -B clean package -Dquarkus.package.type=uber-jar
 
       - name: Create Release
         id: create_release
@@ -34,3 +36,13 @@ jobs:
             New release based on commit ${{ github.sha }}
           draft: false
           prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/java-nomad-example-runner.jar
+          asset_name: java-nomad-example-runner.jar
+          asset_content_type: application/java-archive
