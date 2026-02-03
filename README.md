@@ -5,6 +5,26 @@ Este es un ejemplo de cómo ejecutar el proyecto con Nomad con Java:
 * Descargando un compilado (que está en GitHub)
 * Ejecutando desde local (que está en la carpeta `target`)
 
+## Preparando el entorno
+
+Antes de ejecutar `nomad` necesitamos preparar el servicio. Para ello, lo ejecutaremos en modo de **desarrollo**. (Ojo, en modo de producción tiene otro procedimiento)
+
+Bash (Linux/macOS):
+```shell
+ip link show # Primero, identificamos qué adaptador usaremos. En mi caso usaré "eth0"
+
+sudo nomad agent -dev -bind=0.0.0.0 -network-interface=eth0 -log-level=DEBUG # Aquí, se indica el adatador en el parámetro `network-interface`
+
+```
+
+Powershell (Windows)
+```powershell
+Get-NetAdapter # Primero, identificamos qué adaptador usaremos. En mi caso usaré "Wi-Fi"
+
+nomad agent -dev -bind="0.0.0.0" -network-interface="Wi-Fi" -log-level=DEBUG  # Aquí, se indica el adatador en el parámetro `network-interface`
+
+```
+
 ## Descargando un compilado
 
 Se puede ejecutar el comando nomad con el task `java`, pero tiene la restricción que solo puede ejecutar archivos que sean descargados, no desde local:
