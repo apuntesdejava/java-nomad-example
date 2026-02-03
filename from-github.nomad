@@ -10,7 +10,7 @@ job "from-github" {
     task "api" {
       driver = "java"
       artifact {
-         source      = "https://github.com/apuntesdejava/java-nomad-example/releases/download/3/java-nomad-example-runner.jar"
+         source      = "https://github.com/apuntesdejava/java-nomad-example/releases/download/4/java-nomad-example-runner.jar"
          destination = "local"
       }
       config {
